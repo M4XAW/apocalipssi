@@ -29,7 +29,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 OLLAMA_CONTAINER="apocalipssi-2026-ollama"
-DEFAULT_MODEL="llama3.1:8b"
+# Modèle retenu après benchmark/ADR : plus léger que le 8B pour les CPU locaux.
+DEFAULT_MODEL="llama3.2:3b"
 
 # ---------- Options ----------
 FAST=0
@@ -86,7 +87,7 @@ else
   echo "==> .env present : conserve tel quel."
 fi
 
-# Lecture du modele Ollama defini dans .env (fallback : llama3.1:8b).
+# Lecture du modele Ollama defini dans .env (fallback : llama3.2:3b).
 MODEL="$(sed -n 's/^[[:space:]]*OLLAMA_MODEL[[:space:]]*=[[:space:]]*//p' .env | head -n1)"
 MODEL="${MODEL:-$DEFAULT_MODEL}"
 
