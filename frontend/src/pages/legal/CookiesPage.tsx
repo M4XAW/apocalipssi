@@ -21,8 +21,9 @@ const SECTIONS: LegalSection[] = [
       <>
         <p>
           EduTutor IA utilise le stockage local du navigateur pour conserver le token
-          d'authentification sous la clé <code className="bg-slate-200 px-1 rounded">apocal_token</code>.
-          Ce token permet de maintenir la session de l'utilisateur entre deux pages ou deux visites.
+          d'authentification sous la clé{' '}
+          <code className="bg-slate-200 px-1 rounded">apocal_token</code>. Ce token permet de
+          maintenir la session de l'utilisateur entre deux pages ou deux visites.
         </p>
         <p>
           Le site mémorise également la préférence d'affichage clair/sombre sous la clé{' '}
@@ -55,9 +56,9 @@ const SECTIONS: LegalSection[] = [
     hint: 'cookies nécessitant un consentement préalable et comment il est recueilli.',
     content: (
       <p>
-        Les stockages utilisés par EduTutor IA sont strictement techniques. Ils ne nécessitent pas de
-        consentement préalable au sens des règles applicables aux cookies non essentiels, car ils ne
-        servent ni à la publicité, ni à la mesure d'audience, ni au suivi intersite.
+        Les stockages utilisés par EduTutor IA sont strictement techniques. Ils ne nécessitent pas
+        de consentement préalable au sens des règles applicables aux cookies non essentiels, car ils
+        ne servent ni à la publicité, ni à la mesure d'audience, ni au suivi intersite.
       </p>
     ),
   },
@@ -68,8 +69,8 @@ const SECTIONS: LegalSection[] = [
       <p>
         Le token de connexion reste stocké jusqu'à la déconnexion, la suppression du compte, une
         expiration technique côté serveur ou une suppression manuelle par l'utilisateur dans son
-        navigateur. La préférence de thème reste stockée jusqu'à modification du choix ou suppression
-        des données locales du navigateur.
+        navigateur. La préférence de thème reste stockée jusqu'à modification du choix ou
+        suppression des données locales du navigateur.
       </p>
     ),
   },
