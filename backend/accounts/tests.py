@@ -123,6 +123,20 @@ def test_me_export_json_is_strictly_filtered_by_authenticated_user(client, user)
     other_user = User.objects.create_user(
         username="bob", email="bob@test.com", password="motdepasse123"
     )
+    alice_audit = DataRequest.objects.create(
+        user=user,
+        request_type=DataRequest.RequestType.ACCESS,
+        status=DataRequest.Status.RESPONDED,
+        export_format="json",
+        export_file_hash="a" * 64,
+    )
+    DataRequest.objects.create(
+        user=other_user,
+        request_type=DataRequest.RequestType.ACCESS,
+        status=DataRequest.Status.RESPONDED,
+        export_format="csv",
+        export_file_hash="b" * 64,
+    )
 
     alice_quiz = Quiz.objects.create(
         user=user,
@@ -170,15 +184,26 @@ def test_me_export_json_is_strictly_filtered_by_authenticated_user(client, user)
     assert payload["quizzes"][0]["title"] == "Quiz Alice"
     assert payload["quizzes"][0]["questions"][0]["prompt"] == "Question Alice ?"
     assert payload["reports"] == []
+    assert len(payload["audit_logs"]) == 1
+    assert payload["audit_logs"][0]["id"] == alice_audit.id
+    assert payload["audit_logs"][0]["export_file_hash"] == "a" * 64
 
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "Quiz Bob" not in serialized
     assert "Cours privé Bob" not in serialized
     assert "Question Bob ?" not in serialized
     assert "bob@test.com" not in serialized
+    assert "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" not in serialized
 
 
 def test_me_export_csv_is_machine_readable_attachment(client, user):
+    DataRequest.objects.create(
+        user=user,
+        request_type=DataRequest.RequestType.ACCESS,
+        status=DataRequest.Status.RESPONDED,
+        export_format="json",
+        export_file_hash="c" * 64,
+    )
     quiz = Quiz.objects.create(
         user=user,
         title="Quiz CSV",
@@ -208,6 +233,8 @@ def test_me_export_csv_is_machine_readable_attachment(client, user):
     assert "entity,entity_id,parent_entity,parent_id,field,value" in body
     assert "Quiz CSV" in body
     assert "Question CSV ?" in body
+    assert "audit_log" in body
+    assert "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" in body
 
 
 def test_me_export_creates_sar_audit_trail(client, user):

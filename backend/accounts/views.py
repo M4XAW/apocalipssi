@@ -194,6 +194,7 @@ class MeExportView(APIView):
 
         profile = get_or_create_profile(user)
         quizzes = Quiz.objects.filter(user=user).prefetch_related("questions").order_by("id")
+        data_requests = DataRequest.objects.filter(user=user).order_by("requested_at")
 
         return {
             "exported_at": timezone.now(),
@@ -235,6 +236,18 @@ class MeExportView(APIView):
             ],
             # Aucun modèle de signalement n'existe dans ce codebase pour l'instant.
             "reports": [],
+            "audit_logs": [
+                {
+                    "id": data_request.id,
+                    "request_type": data_request.request_type,
+                    "status": data_request.status,
+                    "export_format": data_request.export_format,
+                    "export_file_hash": data_request.export_file_hash,
+                    "requested_at": data_request.requested_at,
+                    "responded_at": data_request.responded_at,
+                }
+                for data_request in data_requests
+            ],
         }
 
     def _filename(self, user, extension: str) -> str:
@@ -308,6 +321,12 @@ class MeExportView(APIView):
                         ]
                     )
 
+        for audit_log in payload["audit_logs"]:
+            for field, value in audit_log.items():
+                writer.writerow(
+                    ["audit_log", audit_log["id"], "user", payload["user"]["id"], field, value]
+                )
+
         response = HttpResponse(output.getvalue(), content_type="text/csv; charset=utf-8")
         response["Content-Disposition"] = (
             f'attachment; filename="{self._filename(request.user, "csv")}"'
@@ -317,13 +336,13 @@ class MeExportView(APIView):
     @extend_schema(responses={200: OpenApiResponse(description="Export RGPD JSON ou CSV")})
     def get(self, request):
         export_format = "csv" if request.query_params.get("format") == "csv" else "json"
+        payload = self._build_payload(request.user)
         data_request = start_data_request(
             request.user,
             request_type=DataRequest.RequestType.ACCESS,
             export_format=export_format,
         )
 
-        payload = self._build_payload(request.user)
         if export_format == "csv":
             response = self._csv_response(request, payload)
         else:
