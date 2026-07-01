@@ -6,7 +6,8 @@
  * en interne, mais le front n'a plus à connaître cette astuce : il manipule
  * uniquement l'email.
  */
-import { api, setToken, clearToken } from './client';
+import { api } from './client';
+import axios from 'axios';
 
 export type User = {
   id: number;
@@ -20,12 +21,11 @@ export type User = {
   is_staff?: boolean;
 };
 
-type LoginResponse = { token: string; user: User };
+type LoginResponse = { user: User };
 
-/** Connexion par email + mot de passe. Stocke le token et renvoie l'utilisateur. */
+/** Connexion par email + mot de passe. Le backend pose le cookie HttpOnly. */
 export async function login(email: string, password: string): Promise<User> {
   const { data } = await api.post<LoginResponse>('/accounts/login/', { email, password });
-  setToken(data.token);
   return data.user;
 }
 
@@ -45,8 +45,10 @@ export async function signup(input: {
 export async function logout(): Promise<void> {
   try {
     await api.post('/accounts/logout/');
-  } finally {
-    clearToken();
+  } catch (error) {
+    if (!axios.isAxiosError(error) || ![401, 403].includes(error.response?.status ?? 0)) {
+      throw error;
+    }
   }
 }
 
@@ -109,14 +111,12 @@ export async function updateProfile(input: {
   return data;
 }
 
-/** Change le mot de passe (ancien requis). Le backend renvoie un nouveau token. */
+/** Change le mot de passe (ancien requis). Le backend renouvelle le cookie d'auth. */
 export async function changePassword(old_password: string, new_password: string): Promise<string> {
-  const { data } = await api.post<{ detail: string; token: string }>('/accounts/change-password/', {
+  const { data } = await api.post<{ detail: string }>('/accounts/change-password/', {
     old_password,
     new_password,
   });
-  // Le mot de passe a changé -> on remplace le token stocké par le nouveau.
-  setToken(data.token);
   return data.detail;
 }
 
@@ -124,5 +124,4 @@ export async function changePassword(old_password: string, new_password: string)
 export async function deleteAccount(password: string): Promise<void> {
   // axios : le corps d'une requête DELETE se passe via la clé `data`.
   await api.delete('/accounts/profile/', { data: { password } });
-  clearToken();
 }

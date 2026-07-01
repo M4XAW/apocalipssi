@@ -1,11 +1,10 @@
 /**
  * Contexte d'authentification.
  *
- * Au démarrage, tente de restaurer l'utilisateur via /api/accounts/me/ si un
- * token est présent en localStorage.
+ * Le token d'auth est stocke dans un cookie HttpOnly, donc React ne le lit pas.
+ * La session est restauree en demandant directement l'utilisateur courant.
  */
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { getToken } from '@/api/client';
 import { me, login as apiLogin, logout as apiLogout, type User } from '@/api/auth';
 
 type AuthContextValue = {
@@ -23,15 +22,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Restaure la session si un token est présent
-    if (getToken()) {
-      me()
-        .then(setUser)
-        .catch(() => setUser(null))
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
+    me()
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -45,10 +39,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refresh = async () => {
-    if (!getToken()) {
-      setUser(null);
-      return;
-    }
     const u = await me();
     setUser(u);
   };
@@ -62,6 +52,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth doit être utilisé à l'intérieur d'un AuthProvider");
+  if (!ctx) throw new Error("useAuth doit etre utilise a l'interieur d'un AuthProvider");
   return ctx;
 }

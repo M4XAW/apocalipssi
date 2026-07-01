@@ -158,11 +158,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Django REST Framework
 # ----------------------------------------------------------------------------
 REST_FRAMEWORK = {
-    # TokenAuthentication en premier : les requêtes du frontend (header
-    # Authorization: Token ...) sont authentifiées par token, sans contrôle
-    # CSRF. SessionAuthentication reste en second pour la navigation Swagger UI.
+    # CookieTokenAuthentication lit d'abord le header Authorization: Token ...
+    # (scripts/tests/Swagger), puis le cookie HttpOnly posé pour le frontend.
+    # Quand l'auth vient du cookie, les requêtes d'écriture doivent passer CSRF.
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.TokenAuthentication",
+        "accounts.authentication.CookieTokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
@@ -209,6 +209,24 @@ CORS_ALLOWED_ORIGINS = config(
     cast=Csv(),
 )
 CORS_ALLOW_CREDENTIALS = True
+
+# ----------------------------------------------------------------------------
+# Cookie d'authentification frontend
+# ----------------------------------------------------------------------------
+# Le token DRF n'est plus exposé à JavaScript : le backend le pose dans un cookie
+# HttpOnly. En production, DJANGO_SECURE_PROD=True force Secure via le défaut.
+AUTH_TOKEN_COOKIE_NAME = config("AUTH_TOKEN_COOKIE_NAME", default="apocal_auth")
+AUTH_TOKEN_COOKIE_MAX_AGE = config(
+    "AUTH_TOKEN_COOKIE_MAX_AGE",
+    default=60 * 60 * 24 * 14,
+    cast=int,
+)
+AUTH_TOKEN_COOKIE_SECURE = config(
+    "AUTH_TOKEN_COOKIE_SECURE",
+    default=SECURE_PROD,
+    cast=bool,
+)
+AUTH_TOKEN_COOKIE_SAMESITE = config("AUTH_TOKEN_COOKIE_SAMESITE", default="Lax")
 
 # ----------------------------------------------------------------------------
 # Intégration LLM (Ollama)

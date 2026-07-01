@@ -1,56 +1,49 @@
 /**
- * Client axios partagé.
+ * Client axios partage.
  *
- * - Lit l'URL de base depuis VITE_API_BASE_URL (configuré dans .env).
- * - Injecte automatiquement le token DRF si présent en localStorage.
- * - Gère la 401 globale en supprimant le token + en redirigeant vers /login.
+ * - Lit l'URL de base depuis VITE_API_BASE_URL.
+ * - Envoie le cookie d'auth HttpOnly avec `withCredentials`.
+ * - Ajoute le header CSRF sur les requetes qui modifient l'etat.
  */
-import axios, { AxiosError, type AxiosInstance } from 'axios';
+import axios, { type AxiosInstance } from 'axios';
 
-// Vite remplace import.meta.env.VITE_API_BASE_URL au BUILD (ou au démarrage du
-// dev-server), pas au runtime. En dev (npm run dev), la valeur vient du .env via
-// docker compose. Pour un build de prod, passez VITE_API_BASE_URL en ARG/ENV au
-// moment du docker build, sinon c'est le fallback ci-dessous qui est figé.
+// Vite remplace import.meta.env.VITE_API_BASE_URL au build ou au demarrage du
+// dev-server. En production same-origin, la valeur attendue est souvent "/api".
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api';
-const TOKEN_KEY = 'apocal_token';
+const CSRF_COOKIE_NAME = 'csrftoken';
 
 export const api: AxiosInstance = axios.create({
   baseURL: BASE_URL,
-  timeout: 120_000, // 2 min — utile pour generate-quiz qui peut être long
+  timeout: 120_000, // 2 min, utile pour generate-quiz qui peut etre long.
+  withCredentials: true,
 });
 
-// --- Token utilities ---
-
-export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+function getCookie(name: string): string | null {
+  const prefix = `${name}=`;
+  return (
+    document.cookie
+      .split(';')
+      .map((cookie) => cookie.trim())
+      .find((cookie) => cookie.startsWith(prefix))
+      ?.slice(prefix.length) ?? null
+  );
 }
 
-export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
+function isUnsafeMethod(method?: string): boolean {
+  return !['get', 'head', 'options', 'trace'].includes((method ?? 'get').toLowerCase());
 }
-
-export function clearToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
-}
-
-// --- Interceptors ---
 
 api.interceptors.request.use((config) => {
-  const token = getToken();
-  if (token) {
-    config.headers.Authorization = `Token ${token}`;
+  if (isUnsafeMethod(config.method)) {
+    const csrfToken = getCookie(CSRF_COOKIE_NAME);
+    if (csrfToken) {
+      config.headers['X-CSRFToken'] = csrfToken;
+    }
   }
   return config;
 });
 
 api.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
-    // En cas de 401, on nettoie le token. La redirection se fait côté UI
-    // via le RequireAuth qui détecte l'absence de session.
-    if (error.response?.status === 401) {
-      clearToken();
-    }
-    return Promise.reject(error);
-  },
+  (error) => Promise.reject(error),
 );
