@@ -31,6 +31,17 @@ class QuizSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at"]
 
 
+class QuizPublicSerializer(serializers.ModelSerializer):
+    """Quiz pour passage / génération — sans bonnes réponses ni texte source."""
+
+    questions = QuestionPublicSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Quiz
+        fields = ["id", "title", "score", "created_at", "questions"]
+        read_only_fields = ["id", "created_at"]
+
+
 class QuizSummarySerializer(serializers.ModelSerializer):
     """Version compacte pour la liste d'historique."""
 

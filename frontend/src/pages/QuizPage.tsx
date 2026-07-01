@@ -103,7 +103,7 @@ export default function QuizPage() {
             <div className="space-y-2">
               {q.options.map((opt, optIdx) => {
                 const isSelected = userChoice === optIdx;
-                const isCorrect = detail && q.correct_index === optIdx;
+                const isCorrect = detail && detail.correct_index === optIdx;
                 const isWrongPick = detail && isSelected && !detail.correct;
 
                 let cls = 'border-slate-200 hover:bg-slate-50';

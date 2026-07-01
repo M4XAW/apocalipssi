@@ -4,13 +4,14 @@ export type Question = {
   index: number;
   prompt: string;
   options: string[];
-  correct_index: number;
+  /** Présent uniquement après soumission (via AnswerDetail) ou en révision. */
+  correct_index?: number;
 };
 
 export type Quiz = {
   id: number;
   title: string;
-  source_text: string;
+  source_text?: string;
   score: number | null;
   created_at: string;
   questions: Question[];

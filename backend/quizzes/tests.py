@@ -67,6 +67,8 @@ def test_quiz_detail(auth_client, sample_quiz):
     response = auth_client.get(f"/api/quizzes/{sample_quiz.id}/")
     assert response.status_code == 200
     assert len(response.data["questions"]) == 10
+    assert "correct_index" not in response.data["questions"][0]
+    assert "source_text" not in response.data
 
 
 def test_quiz_detail_404_for_other_users_quiz(auth_client, other_user):

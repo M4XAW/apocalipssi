@@ -16,7 +16,7 @@ export async function ping(): Promise<LLMPing> {
 
 /**
  * Génère un quiz à partir d'un PDF ou d'un texte.
- * Renvoie le quiz complet (avec les 10 questions et leur bonne réponse).
+ * Renvoie le quiz sans les bonnes réponses (passage du QCM).
  */
 export async function generateQuiz(input: {
   title: string;

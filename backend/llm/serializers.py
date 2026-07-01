@@ -2,6 +2,8 @@
 
 from rest_framework import serializers
 
+from .services.quiz_prompt import PromptInjectionError, validate_source_text
+
 
 class GenerateQuizSerializer(serializers.Serializer):
     """Input pour POST /api/llm/generate-quiz/.
@@ -32,5 +34,11 @@ class GenerateQuizSerializer(serializers.Serializer):
 
         if pdf and not pdf.name.lower().endswith(".pdf"):
             raise serializers.ValidationError({"pdf": "Seuls les fichiers .pdf sont acceptés."})
+
+        if source_text:
+            try:
+                validate_source_text(source_text)
+            except PromptInjectionError as exc:
+                raise serializers.ValidationError({"source_text": str(exc)}) from exc
 
         return attrs
