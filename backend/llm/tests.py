@@ -8,7 +8,11 @@ from django.test import override_settings
 from rest_framework.test import APIClient
 
 from llm.services.base import LLMError
-from llm.services.quiz_prompt import PromptInjectionError, parse_and_validate_quiz, validate_source_text
+from llm.services.quiz_prompt import (
+    PromptInjectionError,
+    parse_and_validate_quiz,
+    validate_source_text,
+)
 from quizzes.models import Quiz
 
 pytestmark = pytest.mark.django_db
@@ -110,8 +114,7 @@ def test_validate_source_text_rejects_injection():
 
 def test_validate_source_text_allows_legitimate_course():
     validate_source_text(
-        "Ce chapitre présente les réponses aux exercices du manuel comme corrigé type. "
-        * 20
+        "Ce chapitre présente les réponses aux exercices du manuel comme corrigé type. " * 20
     )
 
 
