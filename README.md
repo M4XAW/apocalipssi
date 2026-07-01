@@ -23,15 +23,16 @@ de LLM open source.
 > de l'installation à votre première fonctionnalité, pas à pas.
 
 > ### Les 5 perturbations de la semaine
+>
 > La semaine compte **exactement 5 perturbations** (dont **2 le mercredi**) :
 >
-> | # | Jour | Créneau | Thème |
-> |---|------|---------|-------|
-> | P1 | J1 | lundi 14h00 | Produit / Scope |
-> | P2 | J2 | mardi 10h00 | Technique (latence → ADR) |
-> | P3 | J3 | mercredi 10h00 | Sécurité (prompt injection) |
-> | P4 | J3-bis | mercredi 14h00 | RGPD / données personnelles |
-> | P5 | J4 | jeudi 10h00 | Livraison / Crise |
+> | #  | Jour   | Créneau       | Thème                        |
+> | -- | ------ | -------------- | ----------------------------- |
+> | P1 | J1     | lundi 14h00    | Produit / Scope               |
+> | P2 | J2     | mardi 10h00    | Technique (latence → ADR)    |
+> | P3 | J3     | mercredi 10h00 | Sécurité (prompt injection) |
+> | P4 | J3-bis | mercredi 14h00 | RGPD / données personnelles  |
+> | P5 | J4     | jeudi 10h00    | Livraison / Crise             |
 
 ### ✨ Déjà inclus
 
@@ -47,15 +48,15 @@ de LLM open source.
 
 ## 🏗️ Stack
 
-| Couche | Technologie | Version |
-|---|---|---|
-| Backend | Django + DRF | Python 3.11+ |
-| Frontend | React + Vite + TypeScript | React 18 |
-| Base de données | PostgreSQL | 16 (Docker) |
-| LLM | Ollama (local) · Gemini · Groq · Cerebras · Mistral · OpenRouter · OpenAI · Claude · mock | Choix via `LLM_BACKEND` |
-| Parsing PDF | `pypdf` | — |
-| Conteneurisation | Docker + Compose | — |
-| API docs | drf-spectacular | Swagger UI auto |
+| Couche           | Technologie                                                                                       | Version                  |
+| ---------------- | ------------------------------------------------------------------------------------------------- | ------------------------ |
+| Backend          | Django + DRF                                                                                      | Python 3.11+             |
+| Frontend         | React + Vite + TypeScript                                                                         | React 18                 |
+| Base de données | PostgreSQL                                                                                        | 16 (Docker)              |
+| LLM              | Ollama (local) · Gemini · Groq · Cerebras · Mistral · OpenRouter · OpenAI · Claude · mock | Choix via`LLM_BACKEND` |
+| Parsing PDF      | `pypdf`                                                                                         | —                       |
+| Conteneurisation | Docker + Compose                                                                                  | —                       |
+| API docs         | drf-spectacular                                                                                   | Swagger UI auto          |
 
 ---
 
@@ -93,21 +94,21 @@ fait tout d'un coup : crée le `.env` si besoin → **build** les images →
 **propose de le télécharger** s'il manque) → affiche les URLs. Lançable depuis
 n'importe où (le script se replace à la racine du projet).
 
-| Système | Commande |
-|---|---|
-| **Linux** | `bash scripts/start-linux.sh` |
-| **macOS** | `bash scripts/start-macos.sh` |
+| Système                       | Commande                                                               |
+| ------------------------------ | ---------------------------------------------------------------------- |
+| **Linux**                | `bash scripts/start-linux.sh`                                        |
+| **macOS**                | `bash scripts/start-macos.sh`                                        |
 | **Windows (PowerShell)** | `powershell -ExecutionPolicy Bypass -File scripts\start-windows.ps1` |
 
 ### Options (cumulables)
 
-| Flag (Unix / Windows) | Effet |
-|---|---|
-| `--fast` / `-Fast` | Relance **sans reconstruire** les images (gain de plusieurs minutes). |
-| `--yes` / `-Yes` | **Non-interactif** : télécharge le modèle LLM s'il manque, sans demander. |
-| `--no-seed` / `-NoSeed` | Démarre **sans** insérer les données de démonstration. |
-| `--logs` / `-Logs` | Enchaîne sur `docker compose logs -f` après le démarrage. |
-| `--help` / `-Help` | Affiche l'aide. |
+| Flag (Unix / Windows)       | Effet                                                                              |
+| --------------------------- | ---------------------------------------------------------------------------------- |
+| `--fast` / `-Fast`      | Relance**sans reconstruire** les images (gain de plusieurs minutes).         |
+| `--yes` / `-Yes`        | **Non-interactif** : télécharge le modèle LLM s'il manque, sans demander. |
+| `--no-seed` / `-NoSeed` | Démarre**sans** insérer les données de démonstration.                    |
+| `--logs` / `-Logs`      | Enchaîne sur`docker compose logs -f` après le démarrage.                      |
+| `--help` / `-Help`      | Affiche l'aide.                                                                    |
 
 Exemples :
 
@@ -137,20 +138,20 @@ powershell -ExecutionPolicy Bypass -File scripts\start-windows.ps1 -Yes -Logs
 
 Le dossier [`docs/`](./docs) contient 11 fiches thématiques :
 
-| Fichier | Sujet |
-|---|---|
-| [00-getting-started.md](./docs/00-getting-started.md) | Setup détaillé + screenshots + troubleshooting 1ʳᵉ démarrage |
-| [01-architecture.md](./docs/01-architecture.md) | Diagramme Django ↔ React ↔ Postgres ↔ Ollama + flux d'auth |
-| [02-llm-integration.md](./docs/02-llm-integration.md) | Câblage Ollama, changement de modèle, structure du prompt |
-| [03-auth.md](./docs/03-auth.md) | Auth par email, validation, reset, profil, où étendre |
-| [04-testing.md](./docs/04-testing.md) | pytest, vitest + tutorial test adversarial (préparation J3) |
-| [05-ci-cd.md](./docs/05-ci-cd.md) | GitHub Actions, Conventional Commits, hooks pre-commit |
-| [06-troubleshooting.md](./docs/06-troubleshooting.md) | Docker, ports en conflit, Ollama, CORS |
-| [07-bonnes-pratiques.md](./docs/07-bonnes-pratiques.md) | ADR, post-mortem, INVEST, MoSCoW + lien cours Agile |
-| [08-mvp2-idees.md](./docs/08-mvp2-idees.md) | Catalogue d'idées MVP2 + méthode de priorisation |
-| [09-admin.md](./docs/09-admin.md) | Interface d'admin : config LLM/app, utilisateurs, données |
-| [10-gestion-projet-github.md](./docs/10-gestion-projet-github.md) | Workflow Git/PR, issues, board GitHub Projects, commits |
-| [11-deploiement-vps-ovh.md](./docs/11-deploiement-vps-ovh.md) | Déploiement **production** sur VPS OVH : durcissement, Docker, override prod, Caddy/HTTPS, LLM cloud, sauvegardes |
+| Fichier                                                          | Sujet                                                                                                                   |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| [00-getting-started.md](./docs/00-getting-started.md)             | Setup détaillé + screenshots + troubleshooting 1ʳᵉ démarrage                                                       |
+| [01-architecture.md](./docs/01-architecture.md)                   | Diagramme Django ↔ React ↔ Postgres ↔ Ollama + flux d'auth                                                           |
+| [02-llm-integration.md](./docs/02-llm-integration.md)             | Câblage Ollama, changement de modèle, structure du prompt                                                             |
+| [03-auth.md](./docs/03-auth.md)                                   | Auth par email, validation, reset, profil, où étendre                                                                 |
+| [04-testing.md](./docs/04-testing.md)                             | pytest, vitest + tutorial test adversarial (préparation J3)                                                            |
+| [05-ci-cd.md](./docs/05-ci-cd.md)                                 | GitHub Actions, Conventional Commits, hooks pre-commit                                                                  |
+| [06-troubleshooting.md](./docs/06-troubleshooting.md)             | Docker, ports en conflit, Ollama, CORS                                                                                  |
+| [07-bonnes-pratiques.md](./docs/07-bonnes-pratiques.md)           | ADR, post-mortem, INVEST, MoSCoW + lien cours Agile                                                                     |
+| [08-mvp2-idees.md](./docs/08-mvp2-idees.md)                       | Catalogue d'idées MVP2 + méthode de priorisation                                                                      |
+| [09-admin.md](./docs/09-admin.md)                                 | Interface d'admin : config LLM/app, utilisateurs, données                                                              |
+| [10-gestion-projet-github.md](./docs/10-gestion-projet-github.md) | Workflow Git/PR, issues, board GitHub Projects, commits                                                                 |
+| [11-deploiement-vps-ovh.md](./docs/11-deploiement-vps-ovh.md)     | Déploiement**production** sur VPS OVH : durcissement, Docker, override prod, Caddy/HTTPS, LLM cloud, sauvegardes |
 
 ---
 
@@ -161,7 +162,7 @@ make help          # Liste toutes les cibles
 make dev           # Lance tous les services
 make down          # Arrête tous les services
 make logs          # Logs en temps réel
-make pull-model    # Télécharge Llama 3.2 3B (1 fois)
+make pull-model    # Télécharge Llama 3.1 8B (1 fois)
 make test          # Lance pytest + vitest
 make lint          # black, ruff, eslint, prettier
 make ci            # lint + test (cible CI)
@@ -178,19 +179,20 @@ script adapté à votre système. Il reconstruit les images, **recrée les
 conteneurs** (prise en compte du code *et* du `.env`) et relance Docker.
 Le script se replace tout seul à la racine du projet — lançable de n'importe où.
 
-| Système | Commande |
-|---|---|
-| **Linux / macOS** | `bash scripts/redeploy.sh` |
+| Système                       | Commande                                                          |
+| ------------------------------ | ----------------------------------------------------------------- |
+| **Linux / macOS**        | `bash scripts/redeploy.sh`                                      |
 | **Windows (PowerShell)** | `powershell -ExecutionPolicy Bypass -File scripts\redeploy.ps1` |
 
 Option **rapide** (`--fast` / `-Fast`) — recrée sans reconstruire les images :
 
-| Système | Commande |
-|---|---|
-| Linux / macOS | `bash scripts/redeploy.sh --fast` |
-| Windows | `powershell -ExecutionPolicy Bypass -File scripts\redeploy.ps1 -Fast` |
+| Système      | Commande                                                                |
+| ------------- | ----------------------------------------------------------------------- |
+| Linux / macOS | `bash scripts/redeploy.sh --fast`                                     |
+| Windows       | `powershell -ExecutionPolicy Bypass -File scripts\redeploy.ps1 -Fast` |
 
 > 💡 **Quand utiliser quoi ?**
+>
 > - **Modif de code** (Python/JS) → `--fast` suffit (code monté en volume, rechargé à chaud).
 > - **Modif du `.env`** (ex. `LLM_BACKEND`, clés API) → `--fast` suffit (recrée les conteneurs).
 > - **Modif des dépendances** (`requirements.txt`, `package.json`) ou d'un `Dockerfile` → version **complète** (avec rebuild).
@@ -213,7 +215,7 @@ L'application envoie des emails (**validation de compte** à l'inscription,
 ### Configurer Brevo (envoi réel)
 
 1. Créez un compte sur [brevo.com](https://www.brevo.com)
-2. Récupérez votre **clé SMTP** (≠ clé API v3) : <https://app.brevo.com/settings/keys/smtp>
+2. Récupérez votre **clé SMTP** (≠ clé API v3) : [https://app.brevo.com/settings/keys/smtp](https://app.brevo.com/settings/keys/smtp)
 3. Dans `.env` :
    ```bash
    BREVO_SMTP_KEY=xsmtpsib-...
@@ -229,6 +231,7 @@ L'application envoie des emails (**validation de compte** à l'inscription,
 ```bash
 docker exec apocalipssi-2026-backend python manage.py send_test_email vous@example.com
 ```
+
 En mode console, l'email s'affiche dans la sortie ; avec Brevo, il part réellement.
 
 ---
@@ -237,14 +240,14 @@ En mode console, l'email s'affiche dans la sortie ; avec Brevo, il part réellem
 
 ### MVP must-have — Release 1 (mercredi soir)
 
-| # | Feature |
-|---|---|
-| F1 | Inscription / connexion **par email** (Django Auth) |
-| F2 | Saisie cours (PDF ≤ 5 Mo OU texte ≥ 200 caractères) |
-| F3 | Génération auto de 10 QCM via Llama 3.2 3B |
-| F4 | Soumission + correction auto |
-| F5 | Affichage score /10 + détail |
-| F6 | Historique persisté par utilisateur |
+| #  | Feature                                                  |
+| -- | -------------------------------------------------------- |
+| F1 | Inscription / connexion**par email** (Django Auth) |
+| F2 | Saisie cours (PDF ≤ 5 Mo OU texte ≥ 200 caractères)   |
+| F3 | Génération auto de 10 QCM via Llama 3.1 8B             |
+| F4 | Soumission + correction auto                             |
+| F5 | Affichage score /10 + détail                            |
+| F6 | Historique persisté par utilisateur                     |
 
 ### Release 2 — Catalogue de pistes (jeudi soir)
 
