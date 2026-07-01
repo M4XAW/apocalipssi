@@ -16,14 +16,20 @@ import json
 import logging
 from io import StringIO
 
+from django.conf import settings
 from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
 from django.contrib.auth.models import User
+<<<<<<< HEAD
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse
 from django.utils import timezone
+=======
+from django.middleware.csrf import get_token
+>>>>>>> auth-cookie-migration
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
+from rest_framework.authentication import get_authorization_header
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.renderers import BaseRenderer, JSONRenderer
@@ -47,7 +53,6 @@ from .tokens import read_email_verify_token, read_password_reset_tokens
 
 logger = logging.getLogger(__name__)
 
-
 class CSVExportRenderer(BaseRenderer):
     """Renderer minimal pour autoriser `?format=csv` sur l'export RGPD."""
 
@@ -58,6 +63,22 @@ class CSVExportRenderer(BaseRenderer):
     def render(self, data, accepted_media_type=None, renderer_context=None):
         return data
 
+def _set_auth_cookie(response: Response, token: Token) -> None:
+    response.set_cookie(
+        settings.AUTH_TOKEN_COOKIE_NAME,
+        token.key,
+        max_age=settings.AUTH_TOKEN_COOKIE_MAX_AGE,
+        httponly=True,
+        secure=settings.AUTH_TOKEN_COOKIE_SECURE,
+        samesite=settings.AUTH_TOKEN_COOKIE_SAMESITE,
+    )
+
+
+def _clear_auth_cookie(response: Response) -> None:
+    response.delete_cookie(
+        settings.AUTH_TOKEN_COOKIE_NAME,
+        samesite=settings.AUTH_TOKEN_COOKIE_SAMESITE,
+    )
 
 class SignupView(APIView):
     """Inscription par email. Envoie l'email de validation (best-effort)."""
@@ -91,7 +112,7 @@ class SignupView(APIView):
 
 
 class LoginView(APIView):
-    """Connexion par email + mot de passe. Renvoie un token DRF + crée la session."""
+    """Connexion par email + mot de passe. Pose un cookie HttpOnly + crée la session."""
 
     permission_classes = [AllowAny]
     # Endpoint PUBLIC (pré-auth) : on désactive l'authentification de requête.
@@ -102,7 +123,7 @@ class LoginView(APIView):
     authentication_classes = []
 
     @extend_schema(
-        request=LoginSerializer, responses={200: OpenApiResponse(description="{ token, user }")}
+        request=LoginSerializer, responses={200: OpenApiResponse(description="{ user }")}
     )
     def post(self, request):
         serializer = LoginSerializer(data=request.data, context={"request": request})
@@ -111,19 +132,35 @@ class LoginView(APIView):
 
         token, _ = Token.objects.get_or_create(user=user)
         django_login(request, user)  # session utile pour la Swagger UI
-        return Response({"token": token.key, "user": UserSerializer(user).data})
+        get_token(request)  # force l'émission du cookie CSRF pour les futures écritures
+        response = Response({"user": UserSerializer(user).data})
+        _set_auth_cookie(response, token)
+        return response
 
 
 class LogoutView(APIView):
     """Déconnexion : invalide le token + détruit la session."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+    authentication_classes = []
 
     @extend_schema(responses={204: OpenApiResponse(description="Déconnexion réussie")})
     def post(self, request):
-        Token.objects.filter(user=request.user).delete()
+        auth = get_authorization_header(request).split()
+        token_key = None
+
+        if len(auth) == 2 and auth[0].lower() == b"token":
+            token_key = auth[1].decode()
+        else:
+            token_key = request.COOKIES.get(settings.AUTH_TOKEN_COOKIE_NAME)
+
+        if token_key:
+            Token.objects.filter(key=token_key).delete()
+
         django_logout(request)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        _clear_auth_cookie(response)
+        return response
 
 
 class MeView(APIView):
@@ -415,7 +452,9 @@ class ProfileView(APIView):
         Token.objects.filter(user=user).delete()  # invalide le token courant
         django_logout(request)
         user.delete()  # supprime aussi le Profile (on_delete=CASCADE)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        _clear_auth_cookie(response)
+        return response
 
 
 class ChangePasswordView(APIView):
@@ -440,4 +479,7 @@ class ChangePasswordView(APIView):
         # reconnecter manuellement.
         Token.objects.filter(user=user).delete()
         token = Token.objects.create(user=user)
-        return Response({"detail": "Mot de passe modifié.", "token": token.key})
+        get_token(request)
+        response = Response({"detail": "Mot de passe modifié."})
+        _set_auth_cookie(response, token)
+        return response

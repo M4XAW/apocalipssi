@@ -8,6 +8,7 @@ import json
 import re
 
 import pytest
+from django.conf import settings
 from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 
@@ -51,15 +52,18 @@ def test_signup_requires_email(client):
     assert response.status_code == 400
 
 
-def test_login_returns_token(client, user):
+def test_login_sets_auth_cookie(client, user):
     response = client.post(
         "/api/accounts/login/",
         {"email": "alice@test.com", "password": "motdepasse123"},
         format="json",
     )
     assert response.status_code == 200, response.data
-    assert "token" in response.data
+    assert "token" not in response.data
     assert response.data["user"]["email"] == "alice@test.com"
+    assert settings.AUTH_TOKEN_COOKIE_NAME in response.cookies
+    assert response.cookies[settings.AUTH_TOKEN_COOKIE_NAME]["httponly"]
+    assert "csrftoken" in response.cookies
 
 
 def test_login_with_wrong_password(client, user):
@@ -86,6 +90,17 @@ def test_me_with_token(client, user):
     assert response.data["username"] == "alice"
 
 
+def test_me_with_auth_cookie(client, user):
+    client.post(
+        "/api/accounts/login/",
+        {"email": "alice@test.com", "password": "motdepasse123"},
+        format="json",
+    )
+    response = client.get("/api/accounts/me/")
+    assert response.status_code == 200
+    assert response.data["email"] == "alice@test.com"
+
+
 def test_logout_invalidates_token(client, user):
     from rest_framework.authtoken.models import Token
 
@@ -95,7 +110,6 @@ def test_logout_invalidates_token(client, user):
     assert response.status_code == 204
     # Le token n'existe plus
     assert not Token.objects.filter(key=token.key).exists()
-
 
 def test_me_export_requires_auth(client):
     response = client.get("/api/accounts/me/export/")
@@ -191,3 +205,32 @@ def test_me_export_csv_is_machine_readable_attachment(client, user):
     assert "entity,entity_id,parent_entity,parent_id,field,value" in body
     assert "Quiz CSV" in body
     assert "Question CSV ?" in body
+def test_logout_with_auth_cookie_clears_cookie(client, user):
+    from rest_framework.authtoken.models import Token
+
+    login_response = client.post(
+        "/api/accounts/login/",
+        {"email": "alice@test.com", "password": "motdepasse123"},
+        format="json",
+    )
+    csrf_token = login_response.cookies["csrftoken"].value
+
+    response = client.post("/api/accounts/logout/", HTTP_X_CSRFTOKEN=csrf_token)
+    assert response.status_code == 204
+    assert not Token.objects.filter(user=user).exists()
+    assert response.cookies[settings.AUTH_TOKEN_COOKIE_NAME].value == ""
+
+
+def test_logout_with_auth_cookie_without_csrf_still_clears_cookie(client, user):
+    from rest_framework.authtoken.models import Token
+
+    client.post(
+        "/api/accounts/login/",
+        {"email": "alice@test.com", "password": "motdepasse123"},
+        format="json",
+    )
+
+    response = client.post("/api/accounts/logout/")
+    assert response.status_code == 204
+    assert not Token.objects.filter(user=user).exists()
+    assert response.cookies[settings.AUTH_TOKEN_COOKIE_NAME].value == ""
