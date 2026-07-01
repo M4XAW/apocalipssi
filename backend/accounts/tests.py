@@ -4,6 +4,7 @@ Ces tests servent d'exemples : signup, login, logout, accès protégé.
 Lancez : pytest accounts/
 """
 
+import hashlib
 import json
 import re
 
@@ -12,6 +13,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 
+from accounts.models import DataRequest
 from quizzes.models import Question, Quiz
 
 pytestmark = pytest.mark.django_db
@@ -205,6 +207,67 @@ def test_me_export_csv_is_machine_readable_attachment(client, user):
     assert "entity,entity_id,parent_entity,parent_id,field,value" in body
     assert "Quiz CSV" in body
     assert "Question CSV ?" in body
+
+
+def test_me_export_creates_sar_audit_trail(client, user):
+    client.force_authenticate(user=user)
+    response = client.get("/api/accounts/me/export/")
+
+    assert response.status_code == 200
+    assert DataRequest.objects.count() == 1
+
+    audit = DataRequest.objects.get()
+    assert audit.user == user
+    assert audit.request_type == DataRequest.RequestType.ACCESS
+    assert audit.status == DataRequest.Status.RESPONDED
+    assert audit.export_format == "json"
+    assert audit.export_file_hash == hashlib.sha256(response.content).hexdigest()
+    assert audit.requested_at is not None
+    assert audit.responded_at is not None
+
+
+def test_me_export_csv_audit_trail_records_format(client, user):
+    client.force_authenticate(user=user)
+    response = client.get("/api/accounts/me/export/?format=csv")
+
+    assert response.status_code == 200
+    audit = DataRequest.objects.get()
+    assert audit.export_format == "csv"
+    assert audit.export_file_hash == hashlib.sha256(response.content).hexdigest()
+
+
+def test_admin_data_requests_lists_sar_audit(client, user):
+    from rest_framework.authtoken.models import Token
+
+    admin = User.objects.create_user(
+        username="admin@test.com",
+        email="admin@test.com",
+        password="motdepasse123",
+        is_staff=True,
+    )
+    Token.objects.create(user=admin)
+
+    client.force_authenticate(user=user)
+    client.get("/api/accounts/me/export/")
+
+    client.force_authenticate(user=admin)
+    response = client.get("/api/admin/data-requests/")
+
+    assert response.status_code == 200
+    assert len(response.data) == 1
+    assert response.data[0]["user_email"] == user.email
+    assert response.data[0]["status"] == DataRequest.Status.RESPONDED
+    assert len(response.data[0]["export_file_hash"]) == 64
+
+
+def test_admin_data_requests_requires_staff(client, user):
+    client.force_authenticate(user=user)
+    client.get("/api/accounts/me/export/")
+
+    response = client.get("/api/admin/data-requests/")
+    assert response.status_code == 403
+
+
 def test_logout_with_auth_cookie_clears_cookie(client, user):
     from rest_framework.authtoken.models import Token
 

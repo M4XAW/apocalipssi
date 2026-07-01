@@ -12,7 +12,7 @@ from django.contrib.auth.password_validation import validate_password as django_
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from .models import get_or_create_profile
+from .models import DataRequest, get_or_create_profile
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -229,3 +229,24 @@ class DeleteAccountSerializer(serializers.Serializer):
         if not user.check_password(value):
             raise serializers.ValidationError("Mot de passe incorrect.")
         return value
+
+
+class DataRequestSerializer(serializers.ModelSerializer):
+    """Audit trail SAR — lecture seule."""
+
+    user_email = serializers.EmailField(source="user.email", read_only=True)
+
+    class Meta:
+        model = DataRequest
+        fields = [
+            "id",
+            "user",
+            "user_email",
+            "request_type",
+            "status",
+            "export_format",
+            "export_file_hash",
+            "requested_at",
+            "responded_at",
+        ]
+        read_only_fields = fields

@@ -20,7 +20,10 @@ from django.conf import settings
 from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
 from django.contrib.auth.models import User
+from django.core.serializers.json import DjangoJSONEncoder
+from django.http import HttpResponse
 from django.middleware.csrf import get_token
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.authentication import get_authorization_header
@@ -31,7 +34,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .emails import EmailError, send_password_reset_email, send_verification_email
-from .models import get_or_create_profile
+from .gdpr_audit import complete_data_request, start_data_request
+from .models import DataRequest, get_or_create_profile
 from .serializers import (
     ChangePasswordSerializer,
     DeleteAccountSerializer,
@@ -281,10 +285,21 @@ class MeExportView(APIView):
 
     @extend_schema(responses={200: OpenApiResponse(description="Export RGPD JSON ou CSV")})
     def get(self, request):
+        export_format = "csv" if request.query_params.get("format") == "csv" else "json"
+        data_request = start_data_request(
+            request.user,
+            request_type=DataRequest.RequestType.ACCESS,
+            export_format=export_format,
+        )
+
         payload = self._build_payload(request.user)
-        if request.query_params.get("format") == "csv":
-            return self._csv_response(request, payload)
-        return self._json_response(request, payload)
+        if export_format == "csv":
+            response = self._csv_response(request, payload)
+        else:
+            response = self._json_response(request, payload)
+
+        complete_data_request(data_request, response.content)
+        return response
 
 
 class VerifyEmailView(APIView):

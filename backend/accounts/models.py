@@ -42,3 +42,60 @@ def get_or_create_profile(user) -> Profile:
     """
     profile, _ = Profile.objects.get_or_create(user=user)
     return profile
+
+
+class DataRequest(models.Model):
+    """Audit trail des demandes d'accès aux données (SAR — RGPD art. 15).
+
+    Chaque export ou demande formelle est tracé : demandeur, statut, date de
+    réponse et empreinte SHA-256 du fichier transmis (preuve d'intégrité).
+    """
+
+    class Status(models.TextChoices):
+        RECEIVED = "recue", "Reçue"
+        IN_PROGRESS = "en_cours", "En cours"
+        RESPONDED = "repondue", "Répondue"
+
+    class RequestType(models.TextChoices):
+        ACCESS = "access", "Accès (art. 15)"
+        EXPORT = "export", "Export portabilité (art. 20)"
+        DELETION = "deletion", "Effacement (art. 17)"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="data_requests",
+    )
+    request_type = models.CharField(
+        max_length=20,
+        choices=RequestType.choices,
+        default=RequestType.ACCESS,
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.RECEIVED,
+    )
+    export_format = models.CharField(
+        max_length=10,
+        blank=True,
+        help_text="Format du fichier exporté (json, csv…).",
+    )
+    export_file_hash = models.CharField(
+        max_length=64,
+        blank=True,
+        help_text="Empreinte SHA-256 du fichier transmis (hex).",
+    )
+    requested_at = models.DateTimeField(auto_now_add=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-requested_at"]
+        verbose_name = "demande d'accès aux données"
+        verbose_name_plural = "demandes d'accès aux données"
+
+    def __str__(self) -> str:
+        return (
+            f"DataRequest<{self.user_id} {self.request_type} "
+            f"{self.status} @ {self.requested_at:%Y-%m-%d %H:%M}>"
+        )

@@ -12,6 +12,7 @@ Endpoints d'administration (Lot 8). Tous réservés aux comptes staff
     PATCH /api/admin/users/<id>/             — activer/désactiver, rôle, email vérifié
     DELETE /api/admin/users/<id>/            — supprimer un compte
     POST  /api/admin/users/<id>/resend-verification/ — renvoyer l'email de validation
+    GET   /api/admin/data-requests/                — audit trail SAR (demandes RGPD)
     POST  /api/admin/seed/                   — insérer des données de démo
     POST  /api/admin/reset-data/             — VIDER la base (destructif, confirmé)
 """
@@ -29,7 +30,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.emails import EmailError, send_verification_email
-from accounts.models import get_or_create_profile
+from accounts.models import DataRequest, get_or_create_profile
+from accounts.serializers import DataRequestSerializer
 from llm.models import LLMConfig
 from llm.providers import PROVIDERS
 from quizzes.models import Question, Quiz
@@ -253,6 +255,27 @@ class AdminUserResendVerificationView(APIView):
         except EmailError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
         return Response({"detail": f"Email de validation renvoyé à {target.email}."})
+
+
+class AdminDataRequestListView(APIView):
+    """Audit trail SAR — toutes les demandes d'accès aux données."""
+
+    permission_classes = [IsAdminUser]
+
+    @extend_schema(responses={200: DataRequestSerializer(many=True)})
+    def get(self, request):
+        qs = DataRequest.objects.select_related("user").order_by("-requested_at")
+
+        status_filter = (request.query_params.get("status") or "").strip()
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+
+        user_id = request.query_params.get("user_id")
+        if user_id:
+            qs = qs.filter(user_id=user_id)
+
+        qs = qs[:200]
+        return Response(DataRequestSerializer(qs, many=True).data)
 
 
 # ---------------------------------------------------------------------------

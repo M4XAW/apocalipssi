@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    AdminDataRequestListView,
     AdminResetDataView,
     AdminSeedView,
     AdminStatsView,
@@ -23,6 +24,7 @@ urlpatterns = [
         AdminUserResendVerificationView.as_view(),
         name="admin-user-resend",
     ),
+    path("data-requests/", AdminDataRequestListView.as_view(), name="admin-data-requests"),
     path("seed/", AdminSeedView.as_view(), name="admin-seed"),
     path("reset-data/", AdminResetDataView.as_view(), name="admin-reset-data"),
 ]
