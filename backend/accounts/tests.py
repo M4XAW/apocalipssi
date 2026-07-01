@@ -113,12 +113,15 @@ def test_logout_invalidates_token(client, user):
     # Le token n'existe plus
     assert not Token.objects.filter(key=token.key).exists()
 
+
 def test_me_export_requires_auth(client):
     response = client.get("/api/accounts/me/export/")
     assert response.status_code in (401, 403)
 
 
-def test_me_export_json_is_strictly_filtered_by_authenticated_user(client, user):
+def test_me_export_json_is_strictly_filtered_by_authenticated_user(
+    client, user
+):
     other_user = User.objects.create_user(
         username="bob", email="bob@test.com", password="motdepasse123"
     )
@@ -221,7 +224,9 @@ def test_me_export_creates_sar_audit_trail(client, user):
     assert audit.request_type == DataRequest.RequestType.ACCESS
     assert audit.status == DataRequest.Status.RESPONDED
     assert audit.export_format == "json"
-    assert audit.export_file_hash == hashlib.sha256(response.content).hexdigest()
+    assert (
+        audit.export_file_hash == hashlib.sha256(response.content).hexdigest()
+    )
     assert audit.requested_at is not None
     assert audit.responded_at is not None
 
@@ -233,7 +238,9 @@ def test_me_export_csv_audit_trail_records_format(client, user):
     assert response.status_code == 200
     audit = DataRequest.objects.get()
     assert audit.export_format == "csv"
-    assert audit.export_file_hash == hashlib.sha256(response.content).hexdigest()
+    assert (
+        audit.export_file_hash == hashlib.sha256(response.content).hexdigest()
+    )
 
 
 def test_admin_data_requests_lists_sar_audit(client, user):

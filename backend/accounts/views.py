@@ -33,7 +33,11 @@ from rest_framework.renderers import BaseRenderer, JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .emails import EmailError, send_password_reset_email, send_verification_email
+from .emails import (
+    EmailError,
+    send_password_reset_email,
+    send_verification_email,
+)
 from .gdpr_audit import complete_data_request, start_data_request
 from .models import DataRequest, get_or_create_profile
 from .serializers import (
@@ -51,6 +55,7 @@ from .tokens import read_email_verify_token, read_password_reset_tokens
 
 logger = logging.getLogger(__name__)
 
+
 class CSVExportRenderer(BaseRenderer):
     """Renderer minimal pour autoriser `?format=csv` sur l'export RGPD."""
 
@@ -60,6 +65,7 @@ class CSVExportRenderer(BaseRenderer):
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         return data
+
 
 def _set_auth_cookie(response: Response, token: Token) -> None:
     response.set_cookie(
@@ -78,11 +84,14 @@ def _clear_auth_cookie(response: Response) -> None:
         samesite=settings.AUTH_TOKEN_COOKIE_SAMESITE,
     )
 
+
 class SignupView(APIView):
     """Inscription par email. Envoie l'email de validation (best-effort)."""
 
     permission_classes = [AllowAny]
-    authentication_classes = []  # endpoint public : pas de CSRF via session (cf. LoginView)
+    authentication_classes = (
+        []
+    )  # endpoint public : pas de CSRF via session (cf. LoginView)
 
     @extend_schema(request=SignupSerializer, responses={201: UserSerializer})
     def post(self, request):
@@ -104,9 +113,13 @@ class SignupView(APIView):
         try:
             send_verification_email(user)
         except EmailError as exc:
-            logger.warning("Email de validation non envoyé pour %s : %s", user.email, exc)
+            logger.warning(
+                "Email de validation non envoyé pour %s : %s", user.email, exc
+            )
 
-        return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+        return Response(
+            UserSerializer(user).data, status=status.HTTP_201_CREATED
+        )
 
 
 class LoginView(APIView):
@@ -121,16 +134,21 @@ class LoginView(APIView):
     authentication_classes = []
 
     @extend_schema(
-        request=LoginSerializer, responses={200: OpenApiResponse(description="{ user }")}
+        request=LoginSerializer,
+        responses={200: OpenApiResponse(description="{ user }")},
     )
     def post(self, request):
-        serializer = LoginSerializer(data=request.data, context={"request": request})
+        serializer = LoginSerializer(
+            data=request.data, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
 
         token, _ = Token.objects.get_or_create(user=user)
         django_login(request, user)  # session utile pour la Swagger UI
-        get_token(request)  # force l'émission du cookie CSRF pour les futures écritures
+        get_token(
+            request
+        )  # force l'émission du cookie CSRF pour les futures écritures
         response = Response({"user": UserSerializer(user).data})
         _set_auth_cookie(response, token)
         return response
@@ -142,7 +160,9 @@ class LogoutView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
 
-    @extend_schema(responses={204: OpenApiResponse(description="Déconnexion réussie")})
+    @extend_schema(
+        responses={204: OpenApiResponse(description="Déconnexion réussie")}
+    )
     def post(self, request):
         auth = get_authorization_header(request).split()
         token_key = None
@@ -185,7 +205,11 @@ class MeExportView(APIView):
         from quizzes.models import Quiz
 
         profile = get_or_create_profile(user)
-        quizzes = Quiz.objects.filter(user=user).prefetch_related("questions").order_by("id")
+        quizzes = (
+            Quiz.objects.filter(user=user)
+            .prefetch_related("questions")
+            .order_by("id")
+        )
 
         return {
             "exported_at": timezone.now(),
@@ -235,7 +259,9 @@ class MeExportView(APIView):
 
     def _json_response(self, request, payload):
         response = HttpResponse(
-            json.dumps(payload, cls=DjangoJSONEncoder, ensure_ascii=False, indent=2),
+            json.dumps(
+                payload, cls=DjangoJSONEncoder, ensure_ascii=False, indent=2
+            ),
             content_type="application/json",
         )
         response["Content-Disposition"] = (
@@ -246,14 +272,32 @@ class MeExportView(APIView):
     def _csv_response(self, request, payload):
         output = StringIO()
         writer = csv.writer(output)
-        writer.writerow(["entity", "entity_id", "parent_entity", "parent_id", "field", "value"])
+        writer.writerow(
+            [
+                "entity",
+                "entity_id",
+                "parent_entity",
+                "parent_id",
+                "field",
+                "value",
+            ]
+        )
 
         for field, value in payload["user"].items():
-            writer.writerow(["user", payload["user"]["id"], "", "", field, value])
+            writer.writerow(
+                ["user", payload["user"]["id"], "", "", field, value]
+            )
 
         for field, value in payload["profile"].items():
             writer.writerow(
-                ["profile", payload["user"]["id"], "user", payload["user"]["id"], field, value]
+                [
+                    "profile",
+                    payload["user"]["id"],
+                    "user",
+                    payload["user"]["id"],
+                    field,
+                    value,
+                ]
             )
 
         for quiz in payload["quizzes"]:
@@ -261,7 +305,14 @@ class MeExportView(APIView):
             for field, value in quiz.items():
                 if field != "questions":
                     writer.writerow(
-                        ["quiz", quiz["id"], "user", payload["user"]["id"], field, value]
+                        [
+                            "quiz",
+                            quiz["id"],
+                            "user",
+                            payload["user"]["id"],
+                            field,
+                            value,
+                        ]
                     )
 
             for question in questions:
@@ -277,15 +328,21 @@ class MeExportView(APIView):
                         ]
                     )
 
-        response = HttpResponse(output.getvalue(), content_type="text/csv; charset=utf-8")
+        response = HttpResponse(
+            output.getvalue(), content_type="text/csv; charset=utf-8"
+        )
         response["Content-Disposition"] = (
             f'attachment; filename="{self._filename(request.user, "csv")}"'
         )
         return response
 
-    @extend_schema(responses={200: OpenApiResponse(description="Export RGPD JSON ou CSV")})
+    @extend_schema(
+        responses={200: OpenApiResponse(description="Export RGPD JSON ou CSV")}
+    )
     def get(self, request):
-        export_format = "csv" if request.query_params.get("format") == "csv" else "json"
+        export_format = (
+            "csv" if request.query_params.get("format") == "csv" else "json"
+        )
         data_request = start_data_request(
             request.user,
             request_type=DataRequest.RequestType.ACCESS,
@@ -306,7 +363,9 @@ class VerifyEmailView(APIView):
     """Confirme l'adresse email à partir du token reçu par email."""
 
     permission_classes = [AllowAny]
-    authentication_classes = []  # endpoint public : pas de CSRF via session (cf. LoginView)
+    authentication_classes = (
+        []
+    )  # endpoint public : pas de CSRF via session (cf. LoginView)
 
     @extend_schema(
         request=EmailVerifySerializer,
@@ -326,7 +385,8 @@ class VerifyEmailView(APIView):
             user = User.objects.get(pk=uid)
         except User.DoesNotExist:
             return Response(
-                {"detail": "Utilisateur introuvable."}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Utilisateur introuvable."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         profile = get_or_create_profile(user)
@@ -340,14 +400,18 @@ class ResendVerificationView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(responses={200: OpenApiResponse(description="Email renvoyé")})
+    @extend_schema(
+        responses={200: OpenApiResponse(description="Email renvoyé")}
+    )
     def post(self, request):
         if get_or_create_profile(request.user).email_verified:
             return Response({"detail": "Votre email est déjà confirmé."})
         try:
             send_verification_email(request.user)
         except EmailError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+            return Response(
+                {"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY
+            )
         return Response({"detail": "Email de validation renvoyé."})
 
 
@@ -355,11 +419,15 @@ class PasswordResetRequestView(APIView):
     """Demande de réinitialisation : envoie un email avec un lien (si le compte existe)."""
 
     permission_classes = [AllowAny]
-    authentication_classes = []  # endpoint public : pas de CSRF via session (cf. LoginView)
+    authentication_classes = (
+        []
+    )  # endpoint public : pas de CSRF via session (cf. LoginView)
 
     @extend_schema(
         request=PasswordResetRequestSerializer,
-        responses={200: OpenApiResponse(description="Email envoyé si le compte existe")},
+        responses={
+            200: OpenApiResponse(description="Email envoyé si le compte existe")
+        },
     )
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
@@ -371,7 +439,9 @@ class PasswordResetRequestView(APIView):
             try:
                 send_password_reset_email(user)
             except EmailError as exc:
-                logger.warning("Email de reset non envoyé pour %s : %s", email, exc)
+                logger.warning(
+                    "Email de reset non envoyé pour %s : %s", email, exc
+                )
 
         # Anti-énumération : réponse IDENTIQUE que le compte existe ou non
         # (on ne révèle pas quels emails sont enregistrés).
@@ -387,11 +457,15 @@ class PasswordResetConfirmView(APIView):
     """Définit le nouveau mot de passe à partir du lien (uid + token)."""
 
     permission_classes = [AllowAny]
-    authentication_classes = []  # endpoint public : pas de CSRF via session (cf. LoginView)
+    authentication_classes = (
+        []
+    )  # endpoint public : pas de CSRF via session (cf. LoginView)
 
     @extend_schema(
         request=PasswordResetConfirmSerializer,
-        responses={200: OpenApiResponse(description="Mot de passe réinitialisé")},
+        responses={
+            200: OpenApiResponse(description="Mot de passe réinitialisé")
+        },
     )
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
@@ -408,7 +482,9 @@ class PasswordResetConfirmView(APIView):
 
         user.set_password(serializer.validated_data["new_password"])
         user.save(update_fields=["password"])
-        return Response({"detail": "Mot de passe réinitialisé. Vous pouvez vous connecter."})
+        return Response(
+            {"detail": "Mot de passe réinitialisé. Vous pouvez vous connecter."}
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -430,9 +506,13 @@ class ProfileView(APIView):
     def get(self, request):
         return Response(UserSerializer(request.user).data)
 
-    @extend_schema(request=ProfileUpdateSerializer, responses={200: UserSerializer})
+    @extend_schema(
+        request=ProfileUpdateSerializer, responses={200: UserSerializer}
+    )
     def patch(self, request):
-        serializer = ProfileUpdateSerializer(instance=request.user, data=request.data, partial=True)
+        serializer = ProfileUpdateSerializer(
+            instance=request.user, data=request.data, partial=True
+        )
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
@@ -442,7 +522,11 @@ class ProfileView(APIView):
             try:
                 send_verification_email(user)
             except EmailError as exc:
-                logger.warning("Email de validation non renvoyé pour %s : %s", user.email, exc)
+                logger.warning(
+                    "Email de validation non renvoyé pour %s : %s",
+                    user.email,
+                    exc,
+                )
 
         return Response(UserSerializer(user).data)
 
@@ -454,7 +538,9 @@ class ProfileView(APIView):
         # Suppression DURE (hard delete) : confirmée par le mot de passe.
         # [TODO J3-bis RGPD] Avant de supprimer, proposer un export des données
         #   personnelles (droit à la portabilité). Voir Lot futur "export RGPD".
-        serializer = DeleteAccountSerializer(data=request.data, context={"request": request})
+        serializer = DeleteAccountSerializer(
+            data=request.data, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
 
         user = request.user
@@ -476,7 +562,9 @@ class ChangePasswordView(APIView):
         responses={200: OpenApiResponse(description="Mot de passe modifié")},
     )
     def post(self, request):
-        serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
+        serializer = ChangePasswordSerializer(
+            data=request.data, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
 
         user = request.user
