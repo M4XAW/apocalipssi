@@ -42,9 +42,9 @@ const SECTIONS: LegalSection[] = [
     content: (
       <>
         <p>
-          L'utilisateur peut être amené à créer un compte à l'aide d'une adresse email et d'un mot de
-          passe. Il est responsable de la confidentialité de ses identifiants et des actions réalisées
-          depuis son compte.
+          L'utilisateur peut être amené à créer un compte à l'aide d'une adresse email et d'un mot
+          de passe. Il est responsable de la confidentialité de ses identifiants et des actions
+          réalisées depuis son compte.
         </p>
         <p>
           Les informations fournies doivent être exactes et ne pas usurper l'identité d'un tiers.
@@ -61,8 +61,8 @@ const SECTIONS: LegalSection[] = [
       <p>
         Il est interdit d'utiliser le service pour déposer des contenus illicites, porter atteinte
         aux droits de tiers, contourner les mécanismes de sécurité, perturber le fonctionnement de
-        l'application, extraire massivement des données ou tenter d'accéder à des comptes, données ou
-        espaces non autorisés.
+        l'application, extraire massivement des données ou tenter d'accéder à des comptes, données
+        ou espaces non autorisés.
       </p>
     ),
   },
@@ -78,8 +78,8 @@ const SECTIONS: LegalSection[] = [
         </p>
         <p>
           Ces contenus sont fournis comme aide à la révision. Ils ne remplacent pas un cours, une
-          correction officielle, un avis pédagogique ou l'appréciation d'un enseignant. L'utilisateur
-          conserve un esprit critique sur les réponses proposées.
+          correction officielle, un avis pédagogique ou l'appréciation d'un enseignant.
+          L'utilisateur conserve un esprit critique sur les réponses proposées.
         </p>
       </>
     ),
@@ -89,10 +89,10 @@ const SECTIONS: LegalSection[] = [
     hint: "limites de responsabilité de l'éditeur.",
     content: (
       <p>
-        EduTutor IA est fourni dans un cadre pédagogique et expérimental. L'équipe projet ne peut pas
-        être tenue responsable d'une indisponibilité temporaire, d'une perte de données non imputable
-        à une faute directe, d'une mauvaise utilisation du service ou des conséquences liées à
-        l'exploitation des contenus générés.
+        EduTutor IA est fourni dans un cadre pédagogique et expérimental. L'équipe projet ne peut
+        pas être tenue responsable d'une indisponibilité temporaire, d'une perte de données non
+        imputable à une faute directe, d'une mauvaise utilisation du service ou des conséquences
+        liées à l'exploitation des contenus générés.
       </p>
     ),
   },

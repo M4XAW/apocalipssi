@@ -19,9 +19,9 @@ const SECTIONS: LegalSection[] = [
     content: (
       <>
         <p>
-          Le service peut collecter les données de compte nécessaires à l'authentification :
-          adresse email, mot de passe chiffré, statut de validation de l'email, date de création du
-          profil et informations techniques liées à la session.
+          Le service peut collecter les données de compte nécessaires à l'authentification : adresse
+          email, mot de passe chiffré, statut de validation de l'email, date de création du profil
+          et informations techniques liées à la session.
         </p>
         <p>
           Pour générer les quiz, l'application conserve le titre du quiz, le texte source transmis
@@ -48,8 +48,8 @@ const SECTIONS: LegalSection[] = [
     content: (
       <p>
         Les traitements nécessaires au fonctionnement du service reposent sur l'exécution du service
-        demandé par l'utilisateur. Les traitements de sécurité, d'administration et de prévention des
-        abus reposent sur l'intérêt légitime de l'équipe projet. Lorsque l'utilisateur dépose un
+        demandé par l'utilisateur. Les traitements de sécurité, d'administration et de prévention
+        des abus reposent sur l'intérêt légitime de l'équipe projet. Lorsque l'utilisateur dépose un
         document ou un texte afin de générer un quiz, il consent à son utilisation pour cette
         finalité.
       </p>
@@ -62,9 +62,9 @@ const SECTIONS: LegalSection[] = [
       <p>
         Les données de compte sont conservées tant que le compte utilisateur existe. Les quiz,
         textes sources, questions, réponses et scores sont conservés afin de permettre l'historique
-        et la révision, jusqu'à suppression par l'utilisateur, suppression du compte ou fin du projet
-        pédagogique. Une politique de rétention dédiée peut préciser les durées par catégorie de
-        données.
+        et la révision, jusqu'à suppression par l'utilisateur, suppression du compte ou fin du
+        projet pédagogique. Une politique de rétention dédiée peut préciser les durées par catégorie
+        de données.
       </p>
     ),
   },
@@ -86,11 +86,11 @@ const SECTIONS: LegalSection[] = [
     hint: 'si un fournisseur cloud héberge les données hors Union européenne.',
     content: (
       <p>
-        Selon la configuration retenue, la génération de quiz peut être réalisée localement ou via un
-        fournisseur LLM externe. Si un fournisseur situé hors de l'Union européenne est utilisé, les
-        textes transmis pour générer les quiz peuvent faire l'objet d'un transfert hors UE. L'équipe
-        projet doit privilégier, lorsque possible, des fournisseurs offrant des garanties adaptées au
-        RGPD.
+        Selon la configuration retenue, la génération de quiz peut être réalisée localement ou via
+        un fournisseur LLM externe. Si un fournisseur situé hors de l'Union européenne est utilisé,
+        les textes transmis pour générer les quiz peuvent faire l'objet d'un transfert hors UE.
+        L'équipe projet doit privilégier, lorsque possible, des fournisseurs offrant des garanties
+        adaptées au RGPD.
       </p>
     ),
   },
@@ -113,9 +113,9 @@ const SECTIONS: LegalSection[] = [
     content: (
       <p>
         Le service utilise principalement des mécanismes techniques nécessaires à l'authentification
-        et au fonctionnement de l'application, notamment le stockage local du token de connexion dans
-        le navigateur. Pour plus d'informations, consultez la politique de gestion des cookies et du
-        stockage local du site.
+        et au fonctionnement de l'application, notamment le stockage local du token de connexion
+        dans le navigateur. Pour plus d'informations, consultez la politique de gestion des cookies
+        et du stockage local du site.
       </p>
     ),
   },
