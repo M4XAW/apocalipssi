@@ -55,6 +55,36 @@ export async function me(): Promise<User> {
   return data;
 }
 
+function getFilenameFromContentDisposition(header: string | undefined): string | null {
+  if (!header) return null;
+  const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) return decodeURIComponent(utf8Match[1]);
+  const plainMatch = header.match(/filename="?([^"]+)"?/i);
+  return plainMatch?.[1] ?? null;
+}
+
+export type ExportFormat = 'json' | 'csv';
+
+/** Télécharge l'export RGPD des données de l'utilisateur connecté. */
+export async function exportMyData(format: ExportFormat = 'json'): Promise<void> {
+  const { data, headers } = await api.get<Blob>('/accounts/me/export/', {
+    params: format === 'csv' ? { format } : undefined,
+    responseType: 'blob',
+  });
+
+  const fallbackFilename = `edututor-export.${format}`;
+  const filename =
+    getFilenameFromContentDisposition(headers['content-disposition']) ?? fallbackFilename;
+  const url = URL.createObjectURL(data);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 // ---------------------------------------------------------------------------
 // Validation d'email
 // ---------------------------------------------------------------------------

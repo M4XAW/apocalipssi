@@ -11,15 +11,22 @@ Endpoints d'authentification (Lot 3 : email-identifiant + validation + reset).
     POST /api/accounts/password-reset/confirm/   — définir le nouveau mot de passe
 """
 
+import csv
+import json
 import logging
+from io import StringIO
 
 from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
 from django.contrib.auth.models import User
+from django.core.serializers.json import DjangoJSONEncoder
+from django.http import HttpResponse
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.renderers import BaseRenderer, JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -39,6 +46,17 @@ from .serializers import (
 from .tokens import read_email_verify_token, read_password_reset_tokens
 
 logger = logging.getLogger(__name__)
+
+
+class CSVExportRenderer(BaseRenderer):
+    """Renderer minimal pour autoriser `?format=csv` sur l'export RGPD."""
+
+    media_type = "text/csv"
+    format = "csv"
+    charset = "utf-8"
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        return data
 
 
 class SignupView(APIView):
@@ -116,6 +134,126 @@ class MeView(APIView):
     @extend_schema(responses={200: UserSerializer})
     def get(self, request):
         return Response(UserSerializer(request.user).data)
+
+
+class MeExportView(APIView):
+    """Export RGPD des données de l'utilisateur connecté.
+
+    GET /api/accounts/me/export/             — JSON complet
+    GET /api/accounts/me/export/?format=csv  — CSV machine-readable
+    """
+
+    permission_classes = [IsAuthenticated]
+    renderer_classes = [JSONRenderer, CSVExportRenderer]
+
+    def _build_payload(self, user):
+        from quizzes.models import Quiz
+
+        profile = get_or_create_profile(user)
+        quizzes = Quiz.objects.filter(user=user).prefetch_related("questions").order_by("id")
+
+        return {
+            "exported_at": timezone.now(),
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "date_joined": user.date_joined,
+                "last_login": user.last_login,
+                "is_active": user.is_active,
+            },
+            "profile": {
+                "email_verified": profile.email_verified,
+                "created_at": profile.created_at,
+            },
+            "quizzes": [
+                {
+                    "id": quiz.id,
+                    "title": quiz.title,
+                    "source_text": quiz.source_text,
+                    "score": quiz.score,
+                    "created_at": quiz.created_at,
+                    "updated_at": quiz.updated_at,
+                    "questions": [
+                        {
+                            "id": question.id,
+                            "index": question.index,
+                            "prompt": question.prompt,
+                            "options": question.options,
+                            "correct_index": question.correct_index,
+                            "selected_index": question.selected_index,
+                        }
+                        for question in quiz.questions.all()
+                    ],
+                }
+                for quiz in quizzes
+            ],
+            # Aucun modèle de signalement n'existe dans ce codebase pour l'instant.
+            "reports": [],
+        }
+
+    def _filename(self, user, extension: str) -> str:
+        timestamp = timezone.now().strftime("%Y%m%d-%H%M%S")
+        return f"edututor-export-user-{user.id}-{timestamp}.{extension}"
+
+    def _json_response(self, request, payload):
+        response = HttpResponse(
+            json.dumps(payload, cls=DjangoJSONEncoder, ensure_ascii=False, indent=2),
+            content_type="application/json",
+        )
+        response["Content-Disposition"] = (
+            f'attachment; filename="{self._filename(request.user, "json")}"'
+        )
+        return response
+
+    def _csv_response(self, request, payload):
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["entity", "entity_id", "parent_entity", "parent_id", "field", "value"])
+
+        for field, value in payload["user"].items():
+            writer.writerow(["user", payload["user"]["id"], "", "", field, value])
+
+        for field, value in payload["profile"].items():
+            writer.writerow(
+                ["profile", payload["user"]["id"], "user", payload["user"]["id"], field, value]
+            )
+
+        for quiz in payload["quizzes"]:
+            questions = quiz["questions"]
+            for field, value in quiz.items():
+                if field != "questions":
+                    writer.writerow(
+                        ["quiz", quiz["id"], "user", payload["user"]["id"], field, value]
+                    )
+
+            for question in questions:
+                for field, value in question.items():
+                    writer.writerow(
+                        [
+                            "question",
+                            question["id"],
+                            "quiz",
+                            quiz["id"],
+                            field,
+                            json.dumps(value, ensure_ascii=False),
+                        ]
+                    )
+
+        response = HttpResponse(output.getvalue(), content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = (
+            f'attachment; filename="{self._filename(request.user, "csv")}"'
+        )
+        return response
+
+    @extend_schema(responses={200: OpenApiResponse(description="Export RGPD JSON ou CSV")})
+    def get(self, request):
+        payload = self._build_payload(request.user)
+        if request.query_params.get("format") == "csv":
+            return self._csv_response(request, payload)
+        return self._json_response(request, payload)
 
 
 class VerifyEmailView(APIView):
