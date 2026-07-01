@@ -19,6 +19,8 @@ export type LegalSection = {
   title: string;
   /** Indication pour l'équipe : quoi écrire dans cette rubrique. */
   hint: string;
+  /** Contenu rédigé lorsque la rubrique a été complétée. */
+  content?: ReactNode;
 };
 
 type Props = {
@@ -30,28 +32,32 @@ type Props = {
 };
 
 export default function LegalScaffold({ title, intro, sections, children }: Props) {
+  const isDraft = sections.some((section) => !section.content);
+
   return (
     <article className="max-w-3xl mx-auto">
       <h1 className="text-3xl font-bold text-slate-900 mb-2">{title}</h1>
       <p className="text-slate-600 mb-6">{intro}</p>
 
       {/* Bandeau "à compléter" + lien vers le cours de référence */}
-      <div className="mb-8 p-4 bg-amber-50 border-l-4 border-amber-400 rounded text-sm text-amber-900">
-        <p className="font-semibold mb-1">📝 Page à compléter par votre équipe</p>
-        <p>
-          Ce document est un <strong>modèle vierge</strong>. Remplacez chaque indication en italique
-          par le contenu réel de votre projet. Besoin d'aide ?{' '}
-          <a
-            href={REGLEMENTATION_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-indigo-700 underline hover:no-underline font-medium"
-          >
-            Consultez le cours « Réglementation des données »
-          </a>
-          .
-        </p>
-      </div>
+      {isDraft && (
+        <div className="mb-8 p-4 bg-amber-50 border-l-4 border-amber-400 rounded text-sm text-amber-900">
+          <p className="font-semibold mb-1">📝 Page à compléter par votre équipe</p>
+          <p>
+            Ce document est un <strong>modèle vierge</strong>. Remplacez chaque indication en
+            italique par le contenu réel de votre projet. Besoin d'aide ?{' '}
+            <a
+              href={REGLEMENTATION_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-indigo-700 underline hover:no-underline font-medium"
+            >
+              Consultez le cours « Réglementation des données »
+            </a>
+            .
+          </p>
+        </div>
+      )}
 
       <div className="space-y-6">
         {sections.map((section, i) => (
@@ -59,7 +65,11 @@ export default function LegalScaffold({ title, intro, sections, children }: Prop
             <h2 className="text-lg font-semibold text-slate-900 mb-1">
               {i + 1}. {section.title}
             </h2>
-            <p className="text-sm text-slate-500 italic">À compléter — {section.hint}</p>
+            {section.content ? (
+              <div className="text-sm text-slate-700 leading-6 space-y-2">{section.content}</div>
+            ) : (
+              <p className="text-sm text-slate-500 italic">À compléter — {section.hint}</p>
+            )}
           </section>
         ))}
       </div>
@@ -67,8 +77,8 @@ export default function LegalScaffold({ title, intro, sections, children }: Prop
       {children}
 
       <p className="text-xs text-slate-400 mt-10 pt-4 border-t border-slate-200">
-        Dernière mise à jour : <em>à compléter</em>. Document rédigé dans le cadre pédagogique
-        APOCAL'IPSSI 2026.
+        Dernière mise à jour : {isDraft ? <em>à compléter</em> : '1 juillet 2026'}. Document rédigé
+        dans le cadre pédagogique APOCAL'IPSSI 2026.
       </p>
     </article>
   );
