@@ -10,14 +10,18 @@
  * confirmé » réapparaîtra). La suppression est une action DESTRUCTIVE : on la
  * protège par une confirmation au mot de passe.
  *
- * [TODO J3-bis RGPD] Ajouter ici un bouton « Exporter mes données » (droit à la
- *   portabilité) — placeholder présent plus bas, à implémenter pendant la semaine.
  * [TODO J4] Ajouter un bouton « Signaler un contenu / un quiz » — placeholder.
  */
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { changePassword, deleteAccount, updateProfile } from '@/api/auth';
+import {
+  changePassword,
+  deleteAccount,
+  exportMyData,
+  type ExportFormat,
+  updateProfile,
+} from '@/api/auth';
 import { getApiErrorMessage } from '@/api/errors';
 
 export default function ProfilePage() {
@@ -40,7 +44,12 @@ export default function ProfilePage() {
   const [pwdErr, setPwdErr] = useState<string | null>(null);
   const [pwdLoading, setPwdLoading] = useState(false);
 
-  // --- Zone 3 : suppression ---
+  // --- Zone 3 : données personnelles ---
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
+  const [exportErr, setExportErr] = useState<string | null>(null);
+  const [exportLoading, setExportLoading] = useState<ExportFormat | null>(null);
+
+  // --- Zone 4 : suppression ---
   const [delPwd, setDelPwd] = useState('');
   const [delConfirm, setDelConfirm] = useState(false);
   const [delErr, setDelErr] = useState<string | null>(null);
@@ -81,6 +90,20 @@ export default function ProfilePage() {
       setPwdErr(getApiErrorMessage(err, 'Changement de mot de passe impossible.'));
     } finally {
       setPwdLoading(false);
+    }
+  };
+
+  const handleExport = async (format: ExportFormat) => {
+    setExportMsg(null);
+    setExportErr(null);
+    setExportLoading(format);
+    try {
+      await exportMyData(format);
+      setExportMsg('Export lancé. Votre fichier va être téléchargé.');
+    } catch (err) {
+      setExportErr(getApiErrorMessage(err, 'Export des données impossible.'));
+    } finally {
+      setExportLoading(null);
     }
   };
 
@@ -220,20 +243,36 @@ export default function ProfilePage() {
         </form>
       </section>
 
-      {/* Placeholders RGPD / signalement (à compléter pendant la semaine) */}
+      {/* Données personnelles */}
       <section className="card bg-slate-50">
         <h2 className="text-lg font-semibold text-slate-900 mb-2">Mes données</h2>
-        <p className="text-sm text-slate-500 mb-4">
-          Fonctionnalités à construire pendant la semaine APOCAL'IPSSI.
-        </p>
+        <p className="text-sm text-slate-500 mb-4">Téléchargez une copie de vos données.</p>
+        {exportMsg && (
+          <div className="mb-4 p-3 bg-emerald-50 border-l-4 border-emerald-500 text-sm text-emerald-900 rounded">
+            {exportMsg}
+          </div>
+        )}
+        {exportErr && (
+          <div className="mb-4 p-3 bg-rose-50 border-l-4 border-rose-500 text-sm text-rose-900 rounded">
+            {exportErr}
+          </div>
+        )}
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
-            disabled
-            title="À implémenter (J3-bis) — droit à la portabilité RGPD"
-            className="btn-secondary opacity-60 cursor-not-allowed"
+            onClick={() => handleExport('json')}
+            disabled={exportLoading !== null}
+            className="btn-secondary"
           >
-            Exporter mes données (bientôt)
+            {exportLoading === 'json' ? 'Préparation…' : 'Exporter en JSON'}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleExport('csv')}
+            disabled={exportLoading !== null}
+            className="btn-secondary"
+          >
+            {exportLoading === 'csv' ? 'Préparation…' : 'Exporter en CSV'}
           </button>
           <button
             type="button"
