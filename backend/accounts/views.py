@@ -20,13 +20,7 @@ from django.conf import settings
 from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
 from django.contrib.auth.models import User
-<<<<<<< HEAD
-from django.core.serializers.json import DjangoJSONEncoder
-from django.http import HttpResponse
-from django.utils import timezone
-=======
 from django.middleware.csrf import get_token
->>>>>>> auth-cookie-migration
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.authentication import get_authorization_header
